@@ -45,8 +45,11 @@ def getcurrtime():
 
 def getoutdir(context):
     outdir=f'./output/{context}'
+    if not os.path.exists('./output'):
+        print('creating output')
+        os.mkdir('./output')
     if not os.path.exists(outdir):
-        print('inside if')
+        print(f'creating {outdir}')
         os.mkdir(outdir)
     return outdir
 
@@ -68,14 +71,13 @@ def getDataFrame(zeepObject):
     df=pd.DataFrame(data)
     return df
 
-def getTrainingComponentDetails(client,nrtcode):
+def getTrainingComponentDetails(client,rtacode,nrtcode):
     string_array_type = client.get_type('ns1:TrainingComponentDetailsRequest')
     request = string_array_type()
     request.Code = nrtcode
     obj=client.service.GetDetails(request)
     nrtCompletionList= obj.CompletionMapping.NrtCompletion
     df1=getDataFrame(nrtCompletionList)
-    print(obj.ComponentType)
     releaseList=obj.Releases.Release
     latestRelease=len(releaseList)
     latestReleaseobject=releaseList[0]
@@ -86,6 +88,8 @@ def getTrainingComponentDetails(client,nrtcode):
     df2=getDataFrame(unitList)
     df2=addDataFrame(df2,'ReleaseNumber',latestReleaseobject.ReleaseNumber)
     df2=addDataFrame(df2,'ReleaseDate',latestReleaseobject.ReleaseDate)
+    df2=addDataFrame(df2,'nrtcode',nrtcode)
+    df2=addDataFrame(df2,'parentrtacode',rtacode)
     loadtime=str(getcurrtime().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
     df2=addDataFrame(df2,'LoadTime',loadtime)
     unitdf = pd.merge(df1, df2, on='Code')
@@ -121,6 +125,7 @@ def getOrganisationalDetails(client,rtacode):
     scopelist=obj.Scopes.Scope
     scopedf=getDataFrame(scopelist)
     loadtime=str(getcurrtime().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+    scopedf=addDataFrame(scopedf,'rtacode',rtacode)
     scopedf=addDataFrame(scopedf,'TradingName',tradingName)
     scopedf=addDataFrame(scopedf,'LoadTime',loadtime)
     writecsv(scopedf,'Organisation',f'Scopelist_{rtacode}')
@@ -135,6 +140,7 @@ def main():
     env='sandpit'
     context='Organisation'
     tryUrl= getUrl(env,'Organisation')
+    rtacode=40735
     if(not (tryUrl and not tryUrl.isspace())):
         print ("No Url found")
     else :
@@ -142,8 +148,7 @@ def main():
         #List the structure of the Wsdl
         #getWsdldump(client)
         #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
-        scopelist = getOrganisationalDetails(client,rtacode=40735)
-        print(0)
+        scopelist = getOrganisationalDetails(client,rtacode)
     context='TrainingCompnent'
     tryUrl= getUrl(env,context)
     if(not (tryUrl and not tryUrl.isspace())):
@@ -155,11 +160,9 @@ def main():
         #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
         #print(scopelist)
         for i in scopelist:
-            print(i.TrainingComponentType[0])
             if(i.TrainingComponentType[0]=='Qualification'):
-                unitlist = getTrainingComponentDetails(client,nrtcode=i.NrtCode)
+                unitlist = getTrainingComponentDetails(client,rtacode,nrtcode=i.NrtCode)
 
 if __name__ == "__main__":
     main()
 
-print("finish")

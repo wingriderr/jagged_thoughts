@@ -20,4 +20,4 @@ This module reads the Training gov sandpit environment. As this is a public repo
 
 ## general
 - writes into output folder
-- output folder should be present,havent written handler for that.
+- ~~output folder should be present,havent written handler for that.~~
