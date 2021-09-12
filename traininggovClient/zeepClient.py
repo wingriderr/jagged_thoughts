@@ -2,6 +2,7 @@ import os
 import requests
 from requests.auth import HTTPBasicAuth # or HTTPDigestAuth, or OAuth1, etc.
 from requests import Session
+from requests.sessions import RequestsCookieJar
 from zeep import Client
 from zeep.transports import Transport
 from zeep.wsse.username import UsernameToken
@@ -135,33 +136,34 @@ def getOrganisationalDetails(client,rtacode):
 
 
 def main():
-    user='WebService.Read'
-    password ='Asdf098'
-    env='sandpit'
+    user='WebService.Read' # user to add specific to env
+    password ='Asdf098' # user to add specific to env
+    env='sandpit' # User to add
     context='Organisation'
     tryUrl= getUrl(env,'Organisation')
-    rtacode=40735
-    if(not (tryUrl and not tryUrl.isspace())):
-        print ("No Url found")
-    else :
-        client = getClient(tryUrl,user,password)
-        #List the structure of the Wsdl
-        #getWsdldump(client)
-        #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
-        scopelist = getOrganisationalDetails(client,rtacode)
-    context='TrainingCompnent'
-    tryUrl= getUrl(env,context)
-    if(not (tryUrl and not tryUrl.isspace())):
-        print ("No Url found")
-    else :
-        client = getClient(tryUrl,user,password)
-        #List the structure of the Wsdl
-        #getWsdldump(client)
-        #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
-        #print(scopelist)
-        for i in scopelist:
-            if(i.TrainingComponentType[0]=='Qualification'):
-                unitlist = getTrainingComponentDetails(client,rtacode,nrtcode=i.NrtCode)
+    rtacodelist=[40735] # User to add . 
+    for rtacode in rtacodelist:
+        if(not (tryUrl and not tryUrl.isspace())):
+            print ("No Url found")
+        else :
+            client = getClient(tryUrl,user,password)
+            #List the structure of the Wsdl
+            #getWsdldump(client)
+            #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
+            scopelist = getOrganisationalDetails(client,rtacode)
+        context='TrainingCompnent'
+        tryUrl= getUrl(env,context)
+        if(not (tryUrl and not tryUrl.isspace())):
+            print ("No Url found")
+        else :
+            client = getClient(tryUrl,user,password)
+            #List the structure of the Wsdl
+            #getWsdldump(client)
+            #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
+            #print(scopelist)
+            for i in scopelist:
+                if(i.TrainingComponentType[0]=='Qualification'):
+                    unitlist = getTrainingComponentDetails(client,rtacode,nrtcode=i.NrtCode)
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,4 @@
 
-Install python3
-intall pip
-intall zeep
-install ullib
-install ckan
-install requests
-Install pandas
+zeep
+requests
+pandas

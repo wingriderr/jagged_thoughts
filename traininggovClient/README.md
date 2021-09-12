@@ -4,7 +4,7 @@ This module reads the Training gov sandpit environment. As this is a public repo
 - Based on python3
 - install pip
 - install zeep
-- install ullib
+- ~~install ullib~~
 - install requests
 - install pandas.
 
