@@ -16,11 +16,11 @@ def getClient(username,password):
         wsse=UsernameToken(username, password))
     return client
 
-def test_factory_namespace(client):
+def test_factory_namespace(client,rtacode):
     string_array_type = client.get_type('ns1:OrganisationDetailsRequest')
     #node = client.create_message(client.service, 'ns1:OrganisationDetailsRequest', user='WebService.Read')
     request = string_array_type()
-    request.Code = 40735
+    request.Code = rtacode
     request.IncludeLegacyData = 0
     request.InformationRequested = [{
     "ShowCodes" : 1,
@@ -58,7 +58,7 @@ def main():
     user='WebService.Read'
     password ='Asdf098'
     client = getClient(user,password)
-    org = test_factory_namespace(client)
+    org = test_factory_namespace(client,rtacode=40735)
     print(org)
 
 if __name__ == "__main__":
