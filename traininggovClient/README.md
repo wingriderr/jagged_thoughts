@@ -1,6 +1,6 @@
 # Training Gov Methods
 This module reads the Training gov sandpit environment. As this is a public repo, prod wsdls not added.
-## Details of the environemtn
+## Details of the environment
 - Based on python3
 - install pip
 - install zeep
@@ -20,4 +20,4 @@ This module reads the Training gov sandpit environment. As this is a public repo
 
 ## general
 - writes into output folder
-- output folder should be present
+- output folder should be present,havent written handler for that.
