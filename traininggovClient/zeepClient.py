@@ -10,6 +10,7 @@ import pandas as pd
 from zeep.helpers import serialize_object
 from datetime import datetime
 from pytz import timezone
+from optparse import OptionParser
 
 def getUrl(env,context):
     url=''
@@ -71,6 +72,28 @@ def getDataFrame(zeepObject):
     data = serialize_object(zeepObject)
     df=pd.DataFrame(data)
     return df
+def getTrainingComponentDetailsManual(client,nrtcode):
+    string_array_type = client.get_type('ns1:TrainingComponentDetailsRequest')
+    request = string_array_type()
+    request.Code = nrtcode
+    obj=client.service.GetDetails(request)
+    nrtCompletionList= obj.CompletionMapping.NrtCompletion
+    df1=getDataFrame(nrtCompletionList)
+    releaseList=obj.Releases.Release
+    latestRelease=len(releaseList)
+    latestReleaseobject=releaseList[0]
+    for i in releaseList:
+        if(i.ReleaseNumber==str(latestRelease)):
+            latestReleaseobject=i
+    unitList=latestReleaseobject.UnitGrid.UnitGridEntry
+    df2=getDataFrame(unitList)
+    df2=addDataFrame(df2,'ReleaseNumber',latestReleaseobject.ReleaseNumber)
+    df2=addDataFrame(df2,'ReleaseDate',latestReleaseobject.ReleaseDate)
+    df2=addDataFrame(df2,'nrtcode',nrtcode)
+    loadtime=str(getcurrtime().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+    df2=addDataFrame(df2,'LoadTime',loadtime)
+    unitdf = pd.merge(df1, df2, on='Code')
+    writecsv(unitdf,'Classification',nrtcode)
 
 def getTrainingComponentDetails(client,rtacode,nrtcode):
     string_array_type = client.get_type('ns1:TrainingComponentDetailsRequest')
@@ -133,37 +156,75 @@ def getOrganisationalDetails(client,rtacode):
     #print(scopedf)
     #print(client.service.GetDetails())
     return scopelist
+def args_split(option, opt, value, parser):
+      setattr(parser.values, option.dest, value.split(','))
+
 
 
 def main():
     user='WebService.Read' # user to add specific to env
     password ='Asdf098' # user to add specific to env
     env='sandpit' # User to add
+    parser = OptionParser()
+    parser.add_option('-a','--auto',type='int', action='store', default=0, help='Automode- Default 0,0->Disable,1->Enable')
+    parser.add_option('-m','--manual',type='int', action='store', default=0, help='Manual mode- Default 0,0->Disable,1->Enable' )
+    parser.add_option('--rtacode',
+                  type='string',
+                  action='callback',
+                  callback=args_split,dest='rtacodelist', help='rtacode list provided in comma seperated with single quotes')
+    parser.add_option('--nrtcode',
+                  type='string',
+                  action='callback',
+                  callback=args_split,dest='nrtcodelist',help='nrtcode list provided in comma seperated with single quotes')
+    (options, args) = parser.parse_args()
+    print(options.nrtcodelist)
+    runAuto=options.auto# User to add 1 to run Auto functions. 0 to skip it
+    runManual=options.manual # user to add 1 to run Manual functions 0 to skip it
     context='Organisation'
     tryUrl= getUrl(env,'Organisation')
-    rtacodelist=[40735] # User to add . 
-    for rtacode in rtacodelist:
-        if(not (tryUrl and not tryUrl.isspace())):
-            print ("No Url found")
-        else :
-            client = getClient(tryUrl,user,password)
-            #List the structure of the Wsdl
-            #getWsdldump(client)
-            #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
-            scopelist = getOrganisationalDetails(client,rtacode)
+    #rtacodelist=[40735]
+    rtacodelist=[]
+    rtacodelist=options.rtacodelist # User to add . 
+    nrtcodelist=options.nrtcodelist #user to add.
+    if runAuto==1:
+        if(rtacodelist is None or len(rtacodelist))==0:
+            print("Auto mode enabled, but rtacodelist mandatory. Run help")
+        else:
+            for rtacode in rtacodelist:
+                if(not (tryUrl and not tryUrl.isspace())):
+                    print ("No Url found")
+                else :
+                    client = getClient(tryUrl,user,password)
+                    #List the structure of the Wsdl
+                    #getWsdldump(client)
+                    #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
+                    scopelist = getOrganisationalDetails(client,rtacode)
+                context='TrainingCompnent'
+                tryUrl= getUrl(env,context)
+                if(not (tryUrl and not tryUrl.isspace())):
+                    print ("No Url found")
+                else :
+                    client = getClient(tryUrl,user,password)
+                    #List the structure of the Wsdl
+                    #getWsdldump(client)
+                    #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
+                    #print(scopelist)
+                    for i in scopelist:
+                        if(i.TrainingComponentType[0]=='Qualification'):
+                            unitlist = getTrainingComponentDetails(client,rtacode,nrtcode=i.NrtCode)
+    if runManual==1:
+        print("Manual mode")
         context='TrainingCompnent'
         tryUrl= getUrl(env,context)
         if(not (tryUrl and not tryUrl.isspace())):
             print ("No Url found")
         else :
             client = getClient(tryUrl,user,password)
-            #List the structure of the Wsdl
-            #getWsdldump(client)
-            #The below function gets the list of Scope in the Organisation. [If there is a scope list it writes to output as csv inherently]
-            #print(scopelist)
-            for i in scopelist:
-                if(i.TrainingComponentType[0]=='Qualification'):
-                    unitlist = getTrainingComponentDetails(client,rtacode,nrtcode=i.NrtCode)
+        if(nrtcodelist is None or len(nrtcodelist))==0:
+            print("Manual mode enabled,ntrcodelist is mandatory. Run help")
+        else:
+            for nrtcode in nrtcodelist:
+                    unitlist = getTrainingComponentDetailsManual(client,nrtcode)
 
 if __name__ == "__main__":
     main()
